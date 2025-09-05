@@ -1,6 +1,7 @@
 ######################
 datasets/
 logs/
+preprocessing/mimic-iii/data/
 ######################
 
 # Byte-compiled / optimized / DLL files
