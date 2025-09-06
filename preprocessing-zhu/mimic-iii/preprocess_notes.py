@@ -41,7 +41,8 @@ def extract_to_csv(args, partition, eps=1e-6):
     text_fixed_dir = os.path.join(args.root_path, f'test_text_fixed')
     text_reader = TextReader(text_fixed_dir)
     filenames = os.listdir(text_fixed_dir)
-    notes_df = pd.DataFrame(columns=['PatientID', 'Recordtime', 'AdmissionTime', 'DischargeTime', 'Text'])
+    # notes_df = pd.DataFrame(columns=['PatientID', 'Recordtime', 'AdmissionTime', 'DischargeTime', 'Text'])
+    notes_df = pd.DataFrame(columns=['PatientID', 'Text'])
     for filename in tqdm(filenames, desc='Iterating over notes in {}'.format(partition)):
         patient_id, episode_num = filename.split('_')[:2]
         if not episode_num.isdigit():
@@ -61,11 +62,11 @@ def extract_to_csv(args, partition, eps=1e-6):
         intime = stay_df[stay_df['ICUSTAY_ID'] == icustay].iloc[0]['INTIME']
         outtime = stay_df[stay_df['ICUSTAY_ID'] == icustay].iloc[0]['OUTTIME']
         time, text = text_reader.read_all_text(filename, intime)
-        text_df = pd.DataFrame({'PatientID': patient_id, 'Recordtime': time, 'AdmissionTime': intime, 
-                                'DischargeTime': outtime, 'Text': text})
+        # text_df = pd.DataFrame({'PatientID': patient_id, 'Recordtime': time, 'AdmissionTime': intime, 'DischargeTime': outtime, 'Text': text})
+        text_df = pd.DataFrame({'PatientID': patient_id, 'Text': text})
         notes_df = pd.concat([notes_df, text_df], ignore_index=True)
     
-    notes_df.to_csv(os.path.join(output_dir, f"{partition}.csv"), index=False)
+    notes_df.to_csv(os.path.join(output_dir, "notes.csv"), index=False)
         
 
 def main():

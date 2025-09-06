@@ -1,7 +1,10 @@
 ######################
 datasets/
 logs/
-preprocessing/mimic-iii/data/
+preprocessing-zhu/mimic-iii/data/
+preprocessing-bach/raw/
+preprocessing-bach/processed/
+
 ######################
 
 # Byte-compiled / optimized / DLL files

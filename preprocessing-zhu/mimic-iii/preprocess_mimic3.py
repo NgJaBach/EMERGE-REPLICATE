@@ -255,15 +255,18 @@ def extract_to_csv(args, eps=1e-6, decom_future_time_interval=24.0):
                 all_patient_ts = pd.concat([all_patient_ts, out_df], ignore_index=True)
                 
     # format the csv file
-    basic_cols = ['PatientID', 'RecordTime', 'AdmissionTime', 'DischargeTime']
-    task_cols = ['Outcome', 'LOS', 'Readmission', 'Decompensation'] + phneo_cols
+    # basic_cols = ['PatientID', 'RecordTime', 'AdmissionTime', 'DischargeTime']
+    # task_cols = ['Outcome', 'LOS', 'Readmission', 'Decompensation'] + phneo_cols
+    basic_cols = ['PatientID', 'RecordTime']
+    task_cols = ['Outcome', 'Readmission'] + phneo_cols
+
     demo_cols = ['Sex', 'Age']
     lab_cols = new_header
     cate_cols = [_ for _ in lab_cols if '->' in _]
     num_cols = [_ for _ in lab_cols if '->' not in _]
     columns = basic_cols + task_cols + demo_cols + cate_cols + num_cols
     all_patient_ehr = all_patient_ts[columns]
-    all_patient_ehr.to_csv(os.path.join(output_dir, 'format_mimic3_ehr.csv'), index=False)
+    all_patient_ehr.to_csv(os.path.join(output_dir, 'ehr.csv'), index=False)
 
 
 def main():
@@ -279,7 +282,6 @@ def main():
         os.makedirs(args.output_path)
 
     extract_to_csv(args)
-
 
 if __name__ == '__main__':
     main()
