@@ -105,11 +105,12 @@ def LLM_single(prompt: str):
         return entities
     return []
 
-def extract_dataset(input_pkl, output_json):
+def extract_dataset(input_pkl, output_json, start_idx=0, end_idx=None):
     window_thresh = 2000  # qwen 8192,留一些生成文本的空间
     lines = pd.read_pickle(input_pkl)
+    lines_part = lines[start_idx:end_idx]
     with open(output_json, 'a+', encoding='utf8') as fout:
-        for idx, obj in enumerate(tqdm(lines)):
+        for idx, obj in enumerate(tqdm(lines_part)):
             words = obj['Texts'].split()
             records = [' '.join(words[i:i+window_thresh]) for i in range(0, len(words), window_thresh)]
             print(f"split into {len(records)} chunks")
@@ -127,8 +128,6 @@ def extract_dataset(input_pkl, output_json):
             }
             l = json.dumps(new_obj, ensure_ascii=False)
             print(l, file=fout, flush=True)
-
-
 
 if __name__ == "__main__":
     extract_dataset('./mimic4_all/ts_note_all.pkl', './mimic4_all/output6000.json', start_idx=6000+2895, end_idx=9000)
