@@ -32,7 +32,6 @@ class TextReader():
                 text.append(" ".join(d[t]))
         return time, text
 
-
 def extract_to_csv(args, partition, eps=1e-6):
     output_dir = args.output_path
     if not os.path.exists(output_dir):
@@ -62,8 +61,8 @@ def extract_to_csv(args, partition, eps=1e-6):
         intime = stay_df[stay_df['ICUSTAY_ID'] == icustay].iloc[0]['INTIME']
         outtime = stay_df[stay_df['ICUSTAY_ID'] == icustay].iloc[0]['OUTTIME']
         time, text = text_reader.read_all_text(filename, intime)
-        text_df = pd.DataFrame({'PatientID': patient_id, 'Recordtime': time, 'AdmissionTime': intime, 'DischargeTime': outtime, 'Text': text})
-        # text_df = pd.DataFrame({'PatientID': patient_id, 'Text': text})
+        # text_df = pd.DataFrame({'PatientID': patient_id, 'Recordtime': time, 'AdmissionTime': intime, 'DischargeTime': outtime, 'Text': text})
+        text_df = pd.DataFrame({'PatientID': patient_id, 'Text': text})
         notes_df = pd.concat([notes_df, text_df], ignore_index=True)
     
     notes_df.to_csv(os.path.join(output_dir, "notes.csv"), index=False)

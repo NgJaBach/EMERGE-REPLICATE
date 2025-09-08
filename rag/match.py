@@ -1,11 +1,8 @@
 import pandas as pd
 from collections import defaultdict, Counter
-import sys
-import os
-parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.append(parent_dir)
 from get_bgem3_embedding import *
-import pdb
+from tqdm import tqdm
+import torch
 
 
 def peek_data(input_file):
@@ -21,7 +18,7 @@ def peek_data(input_file):
 
 def batch_match(entities, chunk_size=100, specified_thresh=None):
     nodes = []
-    device = torch.device('cuda', device_no) if torch.cuda.is_available() else torch.device('cpu')
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     # get kg feature in total
     kg_feature, kg_map = load_kg_feature('../with_rag/entityname_map.txt', '../with_rag/kg_entityname_bgem3.pkl') # entityname的feature用于做entity->node匹配，entityinfo_map用于匹配后返回对应百科
     iterations = len(entities) // chunk_size

@@ -6,6 +6,7 @@ import numpy as np
 import yaml
 from tqdm import tqdm
 import math
+import pickle
 
 
 class TSDiscretizer:
@@ -92,7 +93,6 @@ class TSDiscretizer:
         ts_df.insert(0, "RecordTime", np.arange(math.ceil(first_time), math.ceil(first_time)+N_bins))
 
         return ts_df, new_header
-
 
 def layout_csv(pid, n_episode, icustay, ts, stay, readmission):
     admission_time = stay[stay['ICUSTAY_ID'] == icustay]['INTIME'].values[0]
@@ -217,7 +217,7 @@ def extract_to_csv(args, eps=1e-6, decom_future_time_interval=24.0):
                 ts_df, new_header = discretizer.preprocess(ts_df)
 
                 # ts_df = ts_df[ts_df["RecordTime"] < 5]
-                ts_df = ts_df.iloc[:4]
+                ts_df = ts_df.iloc[:48]
 
                 out_df = layout_csv(patient, n_episode, icustay, ts_df, stay_df, readmission)
 
@@ -255,8 +255,9 @@ def extract_to_csv(args, eps=1e-6, decom_future_time_interval=24.0):
                 all_patient_ts = pd.concat([all_patient_ts, out_df], ignore_index=True)
                 
     # format the csv file
-    basic_cols = ['PatientID', 'RecordTime', 'AdmissionTime', 'DischargeTime']
+    # basic_cols = ['PatientID', 'RecordTime', 'AdmissionTime', 'DischargeTime']
     # task_cols = ['Outcome', 'LOS', 'Readmission', 'Decompensation'] + phneo_cols
+    basic_cols = ['PatientID']
     task_cols = ['Outcome', 'Readmission'] # + phneo_cols
 
     demo_cols = ['Sex', 'Age']
