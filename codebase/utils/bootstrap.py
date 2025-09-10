@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from utils.binary_classification_metrics import get_binary_metrics, get_all_metrics, check_metric_is_better
+from .binary_classification_metrics import get_binary_metrics, get_all_metrics, check_metric_is_better
 
 def bootstrap(preds_outcome, preds_readmission, labels_outcome, labels_readmission, K=10, N=1000, seed=42):
     """Bootstrap resampling for binary classification metrics. Resample K times"""
