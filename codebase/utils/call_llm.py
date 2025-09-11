@@ -7,6 +7,7 @@ from openai import OpenAI
 import openai
 import backoff
 import re
+from concurrent.futures import ThreadPoolExecutor
 
 client = OpenAI(base_url='http://localhost:11434/v1/', api_key='ollama')
 
@@ -27,10 +28,9 @@ def remove_reasoning(response_content: str) -> str:
         return response_content.strip()
 
 def ask(user: str, 
-        llm_name="gpt-oss:20b", 
+        llm_name="qwen2.5:7b", 
         max_token=128000,
         temperature=0.3,
-        reasoning_effort="low"
         ) -> str:
     response = completions_with_backoff(
         model=llm_name,
@@ -41,7 +41,6 @@ def ask(user: str,
         n=1,
         stop=None,
         temperature=temperature,
-        extra_body={"reasoning_effort": reasoning_effort}
     ).choices[0].message.content
     return remove_reasoning(response)
 
@@ -59,10 +58,7 @@ You are given 2 lists of diseases extracted from two different clinical notes of
 """
 
 def merge_note(notaA: str, noteB: str) -> str:
-    response = ask(
-        note_merge_prompt_tmpl.format(noteA=notaA, noteB=noteB), 
-        llm_name="gpt-oss:20b", temperature=0.3, reasoning_effort="low"
-    )
+    response = ask(user=note_merge_prompt_tmpl.format(noteA=notaA, noteB=noteB))
     return response
 
 ner_prompt_tmpl = """
@@ -87,14 +83,23 @@ Example:
 [Answer]
 """
 
-def extract_note(notes: str, llm_name="gpt-oss:20b") -> str:
-    run1 = ask(ner_prompt_tmpl.format(input=notes), llm_name=llm_name, temperature=0.3, reasoning_effort="low")
-    run2 = ask(ner_prompt_tmpl.format(input=notes), llm_name=llm_name, temperature=0.3, reasoning_effort="low")
-    run3 = ask(ner_prompt_tmpl.format(input=notes), llm_name=llm_name, temperature=0.3, reasoning_effort="low")
-    run4 = ask(ner_prompt_tmpl.format(input=notes), llm_name=llm_name, temperature=0.3, reasoning_effort="low")
-    answer = merge_note(merge_note(run1, run2), merge_note(run3, run4))
+def extract_note(notes: str) -> str:
+    def run_task():
+        return ask(ner_prompt_tmpl.format(input=notes))
+
+    with ThreadPoolExecutor() as executor:
+        futures = [executor.submit(run_task) for _ in range(4)]
+        results = [f.result() for f in futures]
+        
+    while len(results) > 1:
+        dummy = []
+        if len(results) % 2 == 1:
+            dummy.append(results.pop())
+        for i in range(0, len(results), 2):
+            dummy.append(merge_note(results[i], results[i+1]))
+        results = dummy
     # room to grow
-    return answer
+    return results[0]
 
 summary_prompt_tmpl = """
 [Instruction]
@@ -118,11 +123,8 @@ Using this information, please create a concise and clear summary of the patient
 {edges}
 """
 
-def create_summary(ehr, notes, nodes, edges, llm_name="gpt-oss:20b") -> str:
-    response = ask(
-        summary_prompt_tmpl.format(ehr=ehr, notes=notes, nodes=nodes, edges=edges), 
-        llm_name=llm_name, temperature=0.3, reasoning_effort="low"
-    )
+def create_summary(ehr, notes, nodes, edges) -> str:
+    response = ask(summary_prompt_tmpl.format(ehr=ehr, notes=notes, nodes=nodes, edges=edges))
     return response
 
 # if __name__ == "__main__":

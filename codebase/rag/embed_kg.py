@@ -13,7 +13,7 @@ from FlagEmbedding import BGEM3FlagModel
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model = BGEM3FlagModel("BAAI/bge-m3", use_fp16=True, device=device, trust_remote_code=True)
 
-if __name__ == "__main__":
+def create_adj():
     # Create adjacency list
     df = pd.read_csv("D:/Lab/Research/EMERGE-REPLICATE/datasets/dataverse_files/kg.csv", low_memory=False)
     df = df[["relation", "x_index", "y_index"]]
@@ -25,7 +25,8 @@ if __name__ == "__main__":
     with open("D:/Lab/Research/EMERGE-REPLICATE/codebase/rag/curated_data/kg_adjacency.pkl", "wb") as f:
         pickle.dump(adj_list, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-    # Create disease feature embeddings
+def create_disease_features():
+    # Create disease feature
     df = pd.read_csv("D:/Lab/Research/EMERGE-REPLICATE/datasets/dataverse_files/disease_features.csv", low_memory=False)
     df = df.sort_values("node_index").reset_index(drop=True)
 
@@ -35,11 +36,12 @@ if __name__ == "__main__":
         "[description]" + df["umls_description"].fillna("")
     )
     df["embed"] = list(batch_encode(df["Diseases"].tolist(), batch_size=64, max_length=8192).cpu().numpy())
-    df = df[["node_index", "mondo_name", "Diseases"]]
+    df = df[["node_index", "mondo_name", "Diseases", "embed"]]
 
     with open("D:/Lab/Research/EMERGE-REPLICATE/codebase/rag/curated_data/disease_features_cleaned.pkl", "wb") as f:
         pickle.dump(df, f, protocol=pickle.HIGHEST_PROTOCOL)
 
+def create_notes_embeddings():
     # Embed notes and save to HDF5
     h5_out = "D:/Lab/Research/EMERGE-REPLICATE/codebase/rag/curated_data/notes_embeddings.h5"
 
@@ -55,3 +57,9 @@ if __name__ == "__main__":
             grp = h5.create_group(str(patient_id))
             grp.create_dataset("PatientID", data=np.asarray(patient_id, dtype="int64"))
             grp.create_dataset("Note", data=langchain_chunk_embed(text), compression="gzip")
+
+if __name__ == "__main__":
+    # create_adj()
+    create_disease_features()
+    # create_notes_embeddings()
+    

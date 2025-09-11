@@ -11,24 +11,27 @@ from ..utils.train_test_split import data_split
 import h5py
 import torch
 
+# Preparing datasets
 df = pd.read_csv("D:/Lab/Research/EMERGE-REPLICATE/preprocessing-bach/processed/ehr.csv")
 
 with open("D:/Lab/Research/EMERGE-REPLICATE/codebase/rag/curated_data/disease_features_cleaned.pkl", "rb") as f:
     kg = pickle.load(f)
+mapping = dict(zip(kg["node_index"], kg["mondo_name"]))
 
 with open("D:/Lab/Research/EMERGE-REPLICATE/codebase/rag/curated_data/kg_adjacency.pkl", "rb") as f:
     adj = pickle.load(f)
 
+notes_emb = {}
 with h5py.File("D:/Lab/Research/EMERGE-REPLICATE/codebase/rag/curated_data/notes_embeddings.h5", "r") as h5:
-    notes_emb = {int(k): v["Note"][:] for k, v in h5.items()}
+    for patient_id in h5.keys():  # each group is named by patient_id
+        grp = h5[patient_id]
+        pid = int(grp["PatientID"][()])
+        embedding = np.array(grp["Note"])
+        notes_emb[pid] = embedding
+# print(notes_emb.keys())
+# print(notes_emb[91199].shape) # 768
 
-print(notes_emb[0])
-
-mapping = dict(zip(kg["node_index"], kg["mondo_name"]))
-
-for p in tqdm(notes_emb, total=len(notes_emb), desc="Embedding notes"):
-    notes_emb[p] = langchain_chunk_embed(notes_emb[p])
-
+# Preprocess EHR data to extract entities
 cat_col = df.columns[5:-12]
 num_col = df.columns[-12:]
 
@@ -66,6 +69,7 @@ for idx, row in tqdm(df.iterrows(), total=len(df)):
         elif z_score < -2:
             entities[PatientID].append(f"{c} too low")
 
+# Match entities to knowledge graph
 patients = list(df["PatientID"].unique())
 
 train_ids, val_ids, test_ids = data_split()
@@ -74,6 +78,13 @@ h5_train = "D:/Lab/Research/EMERGE-REPLICATE/codebase/rag/curated_data/complete/
 h5_val = "D:/Lab/Research/EMERGE-REPLICATE/codebase/rag/curated_data/complete/val.h5"
 h5_test = "D:/Lab/Research/EMERGE-REPLICATE/codebase/rag/curated_data/complete/test.h5"
 str_dtype = h5py.string_dtype(encoding="utf-8")
+
+with h5py.File(h5_train, "w") as f:
+    pass
+with h5py.File(h5_val, "w") as f:
+    pass
+with h5py.File(h5_test, "w") as f:
+    pass
 
 def _to_float32_array(x):
     if isinstance(x, torch.Tensor):
@@ -99,7 +110,7 @@ def get_summary(p):
     nodes = []
     for e in entities[p]:
         summary_entities += e + ", "
-        idx = cosine_filter(e, threshold=0.6, top_k=3)
+        idx = cosine_filter(None, e, threshold=0.6, top_k=3)
         nodes.extend(idx)
     summary_entities = summary_entities[:-2]
 
@@ -118,9 +129,9 @@ def get_summary(p):
             summary_edges += e + ", "
     summary_edges = summary_edges[:-2]
     summary_nodes = summary_nodes[:-2]
-    summary_notes = extract_note(notes=notes_emb[p], llm_name="qwen2.5:7b")
+    summary_notes = extract_note(notes=notes_emb[p])
 
-    summary = create_summary(summary_entities, summary_notes, summary_nodes, summary_edges, llm_name="qwen2.5:7b")
+    summary = create_summary(summary_entities, summary_notes, summary_nodes, summary_edges)
     return langchain_chunk_embed(summary)
 
 feature_cols = [c for c in df.columns if c not in ["PatientID","Outcome","Readmission"]]

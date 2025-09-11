@@ -19,6 +19,7 @@ def batch_encode(
 def load_corpus_embeddings():
     with open("D:/Lab/Research/EMERGE-REPLICATE/codebase/rag/curated_data/disease_features_cleaned.pkl", "rb") as f:
         df = pickle.load(f)
+    print(df.head())
     return torch.stack([torch.tensor(e) for e in df["embed"].values]).to(device)
 
 def cosine_filter(corpus_embs, query: str, threshold: float = 0.6, top_k: int = 3) -> List[int]:
@@ -41,6 +42,7 @@ if __name__ == "__main__":
     print(torch.version.cuda)
     print(torch.cuda.is_available())
 
+    load_corpus_embeddings()
     # print(len(df))
 
     # # Encode a query and score
