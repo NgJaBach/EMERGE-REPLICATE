@@ -27,7 +27,7 @@ df["Diseases"] = (
     "[description]" + df["umls_description"].fillna("")
 )
 
-# df["embed"] = list(batch_encode(df["Diseases"].tolist(), batch_size=64, max_length=8192).cpu().numpy())
+df["embed"] = list(batch_encode(df["Diseases"].tolist(), batch_size=64, max_length=8192).cpu().numpy())
 df = df[["node_index", "mondo_name", "Diseases"]]
 
 with open("D:/Lab/Research/EMERGE-REPLICATE/codebase/rag/curated_data/disease_features_cleaned.pkl", "wb") as f:

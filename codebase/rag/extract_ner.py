@@ -19,14 +19,15 @@ with open("D:/Lab/Research/EMERGE-REPLICATE/codebase/rag/curated_data/disease_fe
 with open("D:/Lab/Research/EMERGE-REPLICATE/codebase/rag/curated_data/kg_adjacency.pkl", "rb") as f:
     adj = pickle.load(f)
 
-notes_df = pd.read_csv("D:/Lab/Research/EMERGE-REPLICATE/preprocessing-bach/processed/notes.csv")
+with h5py.File("D:/Lab/Research/EMERGE-REPLICATE/codebase/rag/curated_data/notes_embeddings.h5", "r") as h5:
+    notes_emb = {int(k): v["Note"][:] for k, v in h5.items()}
+
+print(notes_emb[0])
 
 mapping = dict(zip(kg["node_index"], kg["mondo_name"]))
 
-notes = dict(zip(notes_df["PatientID"], notes_df["Text"]))
-notes_emb = {}
-for p in tqdm(notes, total=len(notes), desc="Embedding notes"):
-    notes_emb[p] = langchain_chunk_embed(notes[p])
+for p in tqdm(notes_emb, total=len(notes_emb), desc="Embedding notes"):
+    notes_emb[p] = langchain_chunk_embed(notes_emb[p])
 
 cat_col = df.columns[5:-12]
 num_col = df.columns[-12:]
@@ -117,7 +118,7 @@ def get_summary(p):
             summary_edges += e + ", "
     summary_edges = summary_edges[:-2]
     summary_nodes = summary_nodes[:-2]
-    summary_notes = extract_note(notes=notes[p], llm_name="qwen2.5:7b")
+    summary_notes = extract_note(notes=notes_emb[p], llm_name="qwen2.5:7b")
 
     summary = create_summary(summary_entities, summary_notes, summary_nodes, summary_edges, llm_name="qwen2.5:7b")
     return langchain_chunk_embed(summary)
