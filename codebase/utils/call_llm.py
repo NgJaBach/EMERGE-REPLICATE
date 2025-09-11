@@ -28,7 +28,7 @@ def remove_reasoning(response_content: str) -> str:
         return response_content.strip()
 
 def ask(user: str, 
-        llm_name="qwen2.5:7b", 
+        llm_name="qwen2.5:7b-instruct-q2_K", 
         max_token=128000,
         temperature=0.3,
         ) -> str:
@@ -43,6 +43,27 @@ def ask(user: str,
         temperature=temperature,
     ).choices[0].message.content
     return remove_reasoning(response)
+
+refine_prompt_tmpl = """
+[Instruction]
+Given the extracted entities from a text, refine them using the following rules:
+1. Remove any entities that do not appear in the original text.
+2. Remove entities that are not related to the specified disease type.
+3. Remove duplicated entities to avoid redundancy.
+Return the final refined list of entities only.
+
+[Original Text]
+{text}
+
+[Extracted Entities]
+{entities}
+
+[Answer]
+"""
+
+def refine_note(text: str, entities: str) -> str:
+    response = ask(user=refine_prompt_tmpl.format(text=text, entities=entities))
+    return response
 
 note_merge_prompt_tmpl = """
 [Instruction]
@@ -84,11 +105,12 @@ Example:
 """
 
 def extract_note(notes: str) -> str:
+    return ask(ner_prompt_tmpl.format(input=notes))
     def run_task():
         return ask(ner_prompt_tmpl.format(input=notes))
 
     with ThreadPoolExecutor() as executor:
-        futures = [executor.submit(run_task) for _ in range(4)]
+        futures = [executor.submit(run_task) for _ in range(2)]
         results = [f.result() for f in futures]
         
     while len(results) > 1:
@@ -99,7 +121,8 @@ def extract_note(notes: str) -> str:
             dummy.append(merge_note(results[i], results[i+1]))
         results = dummy
     # room to grow
-    return results[0]
+    answer = refine_note(notes, results[0])
+    return answer
 
 summary_prompt_tmpl = """
 [Instruction]
@@ -108,7 +131,7 @@ As an experienced clinical professor, you have been provided with the following 
 +) Possible diseases the patient may be suffering from
 +) Definitions and descriptions of the corresponding diseases
 +) Knowledge graph triples specific to these diseases
-Using this information, please create a concise and clear summary of the patient’s health status. Your summary should be informative and beneficial for various healthcare prediction tasks, such as in-hospital mortality prediction and 30-day readmission prediction. Please provide your summary directly without any additional explanations.
+Using this information, please create a concise and clear summary of the patient's health status. Your summary should be informative and beneficial for various healthcare prediction tasks, such as in-hospital mortality prediction and 30-day readmission prediction. Please provide your summary directly without any additional explanations.
 
 [Potential abnormal features]
 {ehr}
