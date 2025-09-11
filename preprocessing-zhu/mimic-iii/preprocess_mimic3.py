@@ -216,7 +216,7 @@ def extract_to_csv(args, eps=1e-6, decom_future_time_interval=24.0):
                 discretizer = TSDiscretizer(timestep=12.0)
                 ts_df, new_header = discretizer.preprocess(ts_df)
 
-                # ts_df = ts_df[ts_df["RecordTime"] < 5]
+                # ts_df = ts_df[ts_df["RecordTime"] < 4]
                 ts_df = ts_df.iloc[:48]
 
                 out_df = layout_csv(patient, n_episode, icustay, ts_df, stay_df, readmission)

@@ -5,9 +5,11 @@ from ..utils.bgem3 import cosine_filter
 from collections import defaultdict
 import pickle
 from tqdm import tqdm
-from ..utils.call_llm import extract_note
-from ..utils.clinical_longformer import longformerize
+from ..utils.call_llm import extract_note, create_summary
+from ..utils.clinical_longformer import langchain_chunk_embed
+from ..utils.train_test_split import data_split
 import h5py
+import torch
 
 df = pd.read_csv("D:/Lab/Research/EMERGE-REPLICATE/preprocessing-bach/processed/ehr.csv")
 
@@ -21,11 +23,10 @@ notes_df = pd.read_csv("D:/Lab/Research/EMERGE-REPLICATE/preprocessing-bach/proc
 
 mapping = dict(zip(kg["node_index"], kg["mondo_name"]))
 
-notes = defaultdict(list)
-for idx, row in notes_df.iterrows():
-    PatientID = row["PatientID"]
-    note = row["Text"]
-    notes[PatientID].append(note)
+notes = dict(zip(notes_df["PatientID"], notes_df["Text"]))
+notes_emb = {}
+for p in tqdm(notes, total=len(notes), desc="Embedding notes"):
+    notes_emb[p] = langchain_chunk_embed(notes[p])
 
 cat_col = df.columns[5:-12]
 num_col = df.columns[-12:]
@@ -66,25 +67,34 @@ for idx, row in tqdm(df.iterrows(), total=len(df)):
 
 patients = list(df["PatientID"].unique())
 
-h5_path = "D:/Lab/Research/EMERGE-REPLICATE/codebase/rag/curated_data/complete_patients_data.h5"
+train_ids, val_ids, test_ids = data_split()
+
+h5_train = "D:/Lab/Research/EMERGE-REPLICATE/codebase/rag/curated_data/complete/train.h5"
+h5_val = "D:/Lab/Research/EMERGE-REPLICATE/codebase/rag/curated_data/complete/val.h5"
+h5_test = "D:/Lab/Research/EMERGE-REPLICATE/codebase/rag/curated_data/complete/test.h5"
 str_dtype = h5py.string_dtype(encoding="utf-8")
 
-def store_patient(h5, p, ehr, target, notes, summary):
-    if str(p) in h5:
-        del h5[str(p)]
-    grp = h5.create_group(str(p))
-    grp.create_dataset("EHR", data=ehr, compression="gzip")
-    grp.create_dataset("Outcome_Readmission", data=np.array(target, dtype="int8"))
-    grp.create_dataset("Notes", data=notes.astype("float32"), compression="gzip")
-    grp.create_dataset("Summary", data=summary.astype("float32"), compression="gzip")
+def _to_float32_array(x):
+    if isinstance(x, torch.Tensor):
+        return x.detach().cpu().float().numpy()
+    if isinstance(x, np.ndarray):
+        return x.astype("float32", copy=False)
+    raise TypeError(f"Expected tensor/ndarray, got {type(x)}")
+
+def store_patient(h5_path, p, ehr, target, notes, summary):
+    with h5py.File(h5_path, "a") as h5:
+        grp = h5.create_group(str(p))
+        grp.create_dataset("PatientID", data=np.asarray(p, dtype="int64"))
+        grp.create_dataset("X", data=ehr, compression="gzip")
+        grp.create_dataset("Note", data=_to_float32_array(notes), compression="gzip")
+        grp.create_dataset("Summary", data=_to_float32_array(summary), compression="gzip")
+        grp.create_dataset("Y", data=np.asarray(target, dtype="int8"))
 
 def get_summary(p):
-
-    return ""
-
     entities[p] = list(set(entities[p]))
     summary_entities = ""
     summary_nodes = ""
+    summary_edges = ""
     nodes = []
     for e in entities[p]:
         summary_entities += e + ", "
@@ -93,10 +103,9 @@ def get_summary(p):
     summary_entities = summary_entities[:-2]
 
     nodes = list(set(nodes))
-    summary_nodes = ", "
     
-    summary_edges = ""
     for n in nodes:
+        summary_nodes += kg.iloc[n]["Diseases"] + ", "
         node_x = kg.iloc[n]["node_index"]
         for connect_to in adj[n]:
             rela = connect_to[1]
@@ -104,35 +113,29 @@ def get_summary(p):
             if node_y not in kg["node_index"].values:
                 continue
             e = "(" + mapping[node_x] + ", " + str(rela) + ", " + mapping[node_y] + ")"
-            print(e)
+            # print(e)
             summary_edges += e + ", "
     summary_edges = summary_edges[:-2]
+    summary_nodes = summary_nodes[:-2]
+    summary_notes = extract_note(notes=notes[p], llm_name="qwen2.5:7b")
 
-    summary_notes = ""
-
-    # return create_summary(summary_entities, summary_notes, summary_nodes, summary_edges)
+    summary = create_summary(summary_entities, summary_notes, summary_nodes, summary_edges, llm_name="qwen2.5:7b")
+    return langchain_chunk_embed(summary)
 
 feature_cols = [c for c in df.columns if c not in ["PatientID","Outcome","Readmission"]]
 target_map = df.groupby("PatientID")[["Outcome","Readmission"]].first()
 
-with h5py.File(h5_path, "a") as h5:
-    for p in tqdm(patients):
-        data_ehr = df.loc[df["PatientID"] == p, feature_cols].to_numpy()
-        data_notes = longformerize("\n".join(notes[p]))
-        data_summary = get_summary(p)
-        outcome, readm = target_map.loc[p].astype(int)
-        data_target = (int(outcome), int(readm))
+for p in tqdm(patients):
+    data_ehr = df.loc[df["PatientID"] == p, feature_cols].to_numpy()
+    data_notes = notes_emb[p]
+    data_summary = get_summary(p)
+    outcome, readm = target_map.loc[p].astype(int)
+    data_target = (int(outcome), int(readm))
 
-        store_patient(h5, p, data_ehr, data_target, data_notes, data_summary)
-
-        # row = {
-        #     'PatientID': p,
-        #     'Target': data_target,
-        #     'EHR': data_ehr, # data
-        #     'Notes': data_notes, # embedding
-        #     'Summary': data_summary, # embedding
-        # }
-        # print(f"PatientID: {p}\nEHR shape: {data_ehr.shape}\nNotes shape: {data_notes.shape}\nSummary: {data_summary}\nTarget: {data_target}")
-
-
-
+    if p in train_ids:
+        h5_path = h5_train
+    elif p in val_ids:
+        h5_path = h5_val
+    else:
+        h5_path = h5_test
+    store_patient(h5_path, p, data_ehr, data_target, data_notes, data_summary)

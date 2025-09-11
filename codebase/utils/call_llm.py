@@ -46,6 +46,7 @@ def ask(user: str,
     return remove_reasoning(response)
 
 note_merge_prompt_tmpl = """
+[Instruction]
 You are given 2 lists of diseases extracted from two different clinical notes of the same patient. Your task is to merge these two lists into a single list, ensuring that there are no duplicate disease names.
 
 [List A]
@@ -86,19 +87,43 @@ Example:
 [Answer]
 """
 
-def extract_note(notes: list[str], llm_name="gpt-oss:20b") -> str:
-    all_notes = "\n".join(notes)
-    return ask(ner_prompt_tmpl.format(input=all_notes), llm_name=llm_name, temperature=0.3, reasoning_effort="low")
-
-    answer = ""
-    for note in tqdm(notes):
-        run1 = ask(ner_prompt_tmpl.format(input=note), llm_name=llm_name, temperature=0.3, reasoning_effort="low")
-        run2 = ask(ner_prompt_tmpl.format(input=note), llm_name=llm_name, temperature=0.3, reasoning_effort="low")
-        merged = merge_note(run1, run2)
-        answer = merge_note(answer, merged) if answer else merged
+def extract_note(notes: str, llm_name="gpt-oss:20b") -> str:
+    run1 = ask(ner_prompt_tmpl.format(input=notes), llm_name=llm_name, temperature=0.3, reasoning_effort="low")
+    run2 = ask(ner_prompt_tmpl.format(input=notes), llm_name=llm_name, temperature=0.3, reasoning_effort="low")
+    run3 = ask(ner_prompt_tmpl.format(input=notes), llm_name=llm_name, temperature=0.3, reasoning_effort="low")
+    run4 = ask(ner_prompt_tmpl.format(input=notes), llm_name=llm_name, temperature=0.3, reasoning_effort="low")
+    answer = merge_note(merge_note(run1, run2), merge_note(run3, run4))
     # room to grow
     return answer
 
+summary_prompt_tmpl = """
+[Instruction]
+As an experienced clinical professor, you have been provided with the following information to assist in summarizing a patient's health status:
++) Potential abnormal features exhibited by the patient
++) Possible diseases the patient may be suffering from
++) Definitions and descriptions of the corresponding diseases
++) Knowledge graph triples specific to these diseases
+Using this information, please create a concise and clear summary of the patient’s health status. Your summary should be informative and beneficial for various healthcare prediction tasks, such as in-hospital mortality prediction and 30-day readmission prediction. Please provide your summary directly without any additional explanations.
+
+[Potential abnormal features]
+{ehr}
+
+[Potential diseases]
+{notes}
+
+[Diseases definition and description]
+{nodes}
+
+[Disease relationships]
+{edges}
+"""
+
+def create_summary(ehr, notes, nodes, edges, llm_name="gpt-oss:20b") -> str:
+    response = ask(
+        summary_prompt_tmpl.format(ehr=ehr, notes=notes, nodes=nodes, edges=edges), 
+        llm_name=llm_name, temperature=0.3, reasoning_effort="low"
+    )
+    return response
 
 # if __name__ == "__main__":
     # extract_dataset('./mimic4_all/ts_note_all.pkl', './mimic4_all/output6000.json', start_idx=6000+2895, end_idx=9000)

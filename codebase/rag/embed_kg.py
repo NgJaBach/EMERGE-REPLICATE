@@ -3,20 +3,22 @@ from collections import defaultdict
 import pickle
 from tqdm import tqdm
 from ..utils.bgem3 import batch_encode
+import h5py
+import numpy as np
+import torch
+from ..utils.clinical_longformer import langchain_chunk_embed
 
 df = pd.read_csv("D:/Lab/Research/EMERGE-REPLICATE/datasets/dataverse_files/kg.csv", low_memory=False)
 df = df[["relation", "x_index", "y_index"]]
 
 adj_list = defaultdict(list)
-for u, v, r in tqdm(zip(df["x_index"].values, df["y_index"].values, df["relation"].values), total=len(df)):
+for u, v, r in tqdm(zip(df["x_index"].values, df["y_index"].values, df["relation"].values), total=len(df), desc="Creating adjacency list"):
     adj_list[int(u)].append((int(v), str(r)))
 
-out_path = "D:/Lab/Research/EMERGE-REPLICATE/codebase/rag/curated_data/kg_adjacency.pkl"
-with open(out_path, "wb") as f:
+with open("D:/Lab/Research/EMERGE-REPLICATE/codebase/rag/curated_data/kg_adjacency.pkl", "wb") as f:
     pickle.dump(adj_list, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 df = pd.read_csv("D:/Lab/Research/EMERGE-REPLICATE/datasets/dataverse_files/disease_features.csv", low_memory=False)
-
 df = df.sort_values("node_index").reset_index(drop=True)
 
 df["Diseases"] = (
@@ -25,9 +27,23 @@ df["Diseases"] = (
     "[description]" + df["umls_description"].fillna("")
 )
 
-df["embed"] = list(batch_encode(df["Diseases"].tolist(), batch_size=64, max_length=8192).cpu().numpy())
-df = df[["node_index", "mondo_name", "Diseases", "embed"]]
+# df["embed"] = list(batch_encode(df["Diseases"].tolist(), batch_size=64, max_length=8192).cpu().numpy())
+df = df[["node_index", "mondo_name", "Diseases"]]
 
-out_path = "D:/Lab/Research/EMERGE-REPLICATE/codebase/rag/curated_data/disease_features_cleaned.pkl"
-with open(out_path, "wb") as f:
+with open("D:/Lab/Research/EMERGE-REPLICATE/codebase/rag/curated_data/disease_features_cleaned.pkl", "wb") as f:
     pickle.dump(df, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+h5_out = "D:/Lab/Research/EMERGE-REPLICATE/codebase/rag/curated_data/notes_embeddings.h5"
+
+with h5py.File(h5_out, "w") as f:
+    pass
+
+notes_df = pd.read_csv("D:/Lab/Research/EMERGE-REPLICATE/preprocessing-bach/processed/notes.csv")
+for idx, row in tqdm(notes_df.iterrows(), total=len(notes_df), desc="Embedding notes and saving to HDF5"):
+    patient_id = row["PatientID"]
+    text = row["Text"]
+    
+    with h5py.File(h5_out, "a") as h5:
+        grp = h5.create_group(str(patient_id))
+        grp.create_dataset("PatientID", data=np.asarray(patient_id, dtype="int64"))
+        grp.create_dataset("Note", data=langchain_chunk_embed(text), compression="gzip")
