@@ -10,6 +10,7 @@ from ..utils.clinical_longformer import langchain_chunk_embed
 from ..utils.train_test_split import data_split
 import h5py
 import torch
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Preparing datasets
 df = pd.read_csv("D:/Lab/Research/EMERGE-REPLICATE/preprocessing-bach/processed/ehr.csv")
@@ -134,13 +135,18 @@ def get_summary(p):
     summary = create_summary(summary_entities, summary_notes, summary_nodes, summary_edges)
     return langchain_chunk_embed(summary)
 
+# summaries = defaultdict(list)
+# for p in tqdm(patients, total=len(patients), desc="Generating summaries"):
+#     summaries[p] = get_summary(p)
+
 feature_cols = [c for c in df.columns if c not in ["PatientID","Outcome","Readmission"]]
 target_map = df.groupby("PatientID")[["Outcome","Readmission"]].first()
 
 for p in tqdm(patients):
     data_ehr = df.loc[df["PatientID"] == p, feature_cols].to_numpy()
     data_notes = notes_emb[p]
-    data_summary = get_summary(p)
+    data_summary = data_notes  # default to notes if summary fails
+    # data_summary = summaries[p]
     outcome, readm = target_map.loc[p].astype(int)
     data_target = (int(outcome), int(readm))
 
