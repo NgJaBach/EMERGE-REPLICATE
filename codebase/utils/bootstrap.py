@@ -31,7 +31,9 @@ def bootstrap(preds_outcome, preds_readmission, labels_outcome, labels_readmissi
 
 
 def export_metrics(bootstrapped_samples):
-    metrics = {"outcome_accuracy": [], "outcome_auroc": [], "outcome_auprc": [], "outcome_f1": [], "outcome_minpse": [], "readmission_accuracy": [], "readmission_auroc": [], "readmission_auprc": [], "readmission_f1": [], "readmission_minpse": []}
+    # metrics = {"outcome_accuracy": [], "outcome_auroc": [], "outcome_auprc": [], "outcome_f1": [], "outcome_minpse": [], "readmission_accuracy": [], "readmission_auroc": [], "readmission_auprc": [], "readmission_f1": [], "readmission_minpse": []}
+    metrics = { "outcome_auroc": [], "outcome_auprc": [], "outcome_minpse": [], "readmission_auroc": [], "readmission_auprc": [], "readmission_minpse": []}
+    
     for sample in bootstrapped_samples:
         sample_preds_outcome, sample_preds_readmission, sample_labels_outcome, sample_labels_readmission = sample[0], sample[1], sample[2], sample[3]
         res = get_all_metrics(sample_preds_outcome, sample_preds_readmission, sample_labels_outcome, sample_labels_readmission)
