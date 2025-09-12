@@ -2,10 +2,8 @@
 datasets/
 logs/
 preprocessing-zhu/mimic-iii/data/
-preprocessing-bach/raw/
-preprocessing-bach/processed/
-codebase/rag/curated_data/
-
+good_data/
+archive/
 ######################
 
 # Byte-compiled / optimized / DLL files
