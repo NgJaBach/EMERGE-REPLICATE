@@ -8,7 +8,6 @@ from tqdm import tqdm
 import math
 import pickle
 
-
 class TSDiscretizer:
     def __init__(self, timestep=1.0, config_path=os.path.join(os.path.dirname(__file__), 'resources/discretizer_config.json')):
         with open(config_path) as f:
@@ -136,7 +135,6 @@ def get_pheno_definition(args):
 
     return definitions, code_to_group, id_to_group, group_to_id
 
-
 def extract_to_csv(args, eps=1e-6, decom_future_time_interval=24.0):
     output_dir = args.output_path
     if not os.path.exists(output_dir):
@@ -213,11 +211,11 @@ def extract_to_csv(args, eps=1e-6, decom_future_time_interval=24.0):
                 ts_df = pd.DataFrame(columns=header.split(','))
                 for i in range(len(ts_lines)):
                     ts_df.loc[i] = ts_lines[i].split(',')
-                discretizer = TSDiscretizer(timestep=12.0)
+                discretizer = TSDiscretizer(timestep=12.0) #
                 ts_df, new_header = discretizer.preprocess(ts_df)
 
                 # ts_df = ts_df[ts_df["RecordTime"] < 4]
-                ts_df = ts_df.iloc[:48]
+                # ts_df = ts_df.iloc[:48]
 
                 out_df = layout_csv(patient, n_episode, icustay, ts_df, stay_df, readmission)
 
@@ -257,7 +255,7 @@ def extract_to_csv(args, eps=1e-6, decom_future_time_interval=24.0):
     # format the csv file
     # basic_cols = ['PatientID', 'RecordTime', 'AdmissionTime', 'DischargeTime']
     # task_cols = ['Outcome', 'LOS', 'Readmission', 'Decompensation'] + phneo_cols
-    basic_cols = ['PatientID']
+    basic_cols = ['PatientID', 'RecordTime']
     task_cols = ['Outcome', 'Readmission'] # + phneo_cols
 
     demo_cols = ['Sex', 'Age']

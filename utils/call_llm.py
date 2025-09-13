@@ -149,6 +149,3 @@ Using this information, please create a concise and clear summary of the patient
 def create_summary(ehr, notes, nodes, edges) -> str:
     response = ask(summary_prompt_tmpl.format(ehr=ehr, notes=notes, nodes=nodes, edges=edges))
     return response
-
-# if __name__ == "__main__":
-    # extract_dataset('./mimic4_all/ts_note_all.pkl', './mimic4_all/output6000.json', start_idx=6000+2895, end_idx=9000)

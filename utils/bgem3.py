@@ -3,6 +3,7 @@ from typing import List, Optional, Tuple
 from FlagEmbedding import BGEM3FlagModel
 import pickle
 import pandas as pd
+from utils.constants import *
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model = BGEM3FlagModel("BAAI/bge-m3", use_fp16=True, device=device, trust_remote_code=True)
@@ -17,7 +18,7 @@ def batch_encode(
     return torch.from_numpy(np_vecs).to(device)
 
 def load_corpus_embeddings():
-    with open("D:/Lab/Research/EMERGE-REPLICATE/codebase/rag/curated_data/disease_features_cleaned.pkl", "rb") as f:
+    with open(DISEASE_FEATURES, "rb") as f:
         df = pickle.load(f)
     # print(df.head())
     return torch.stack([torch.tensor(e) for e in df["embed"].values]).to(device)
