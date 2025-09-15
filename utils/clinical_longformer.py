@@ -8,10 +8,15 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 tokenizer = AutoTokenizer.from_pretrained("yikuan8/Clinical-Longformer")
 model = AutoModel.from_pretrained("yikuan8/Clinical-Longformer").to(device).eval()
 
-def longformerize(text: str):
+def longformerize(text: str, max_length: int = 4096):
     with torch.inference_mode():
         # tokenize
-        inputs = tokenizer(text, return_tensors="pt", truncation=True)
+        inputs = tokenizer(
+            text, 
+            return_tensors="pt", 
+            truncation=True,
+            max_length=max_length,
+        )
         # always move inputs to the *model's* device
         dev = next(model.parameters()).device
         inputs = {k: v.to(dev) for k, v in inputs.items()}
@@ -32,11 +37,10 @@ def longformerize(text: str):
 
 def langchain_chunk_embed(
     text: str,
-    chunk_size: int = 4096,
+    chunk_size: int = 4096, # limit is 4096 for longformer
     chunk_overlap: int = 256,
     aggregate: str = "weighted"  # "mean" or "weighted"
 ):
-
     splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size,
                                               chunk_overlap=chunk_overlap)
     chunks = splitter.split_text(text)
@@ -53,12 +57,11 @@ def langchain_chunk_embed(
         w = torch.tensor(lengths, dtype=torch.float32).unsqueeze(1)
         doc_emb = (stack * w).sum(0) / w.sum()
     return doc_emb
-    return {
-        "document_embedding": doc_emb,
-        "chunk_embeddings": stack,
-        "chunks": chunks,
-        "num_chunks": len(chunks)
-    }
+
+
+def plain_truncate(text: str, max_length: int = 4096):
+    emb = longformerize(text, max_length=max_length)
+    return emb
 
 if __name__ == "__main__":
     txt = "Example sentence. " * 800

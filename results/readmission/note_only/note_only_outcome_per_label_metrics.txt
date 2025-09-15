@@ -1,0 +1,6 @@
+threshold: 0.5
+counts: tn=106, fp=5453, fn=112, tp=535
+n0=5559, n1=647, prevalence_pos=0.104254
+per-label: label0_TNR=0.019068, label1_TPR=0.826893
+balanced_accuracy=0.422981
+plot_file=note_only_outcome_per_label_accuracy.png

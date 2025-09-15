@@ -1,0 +1,6 @@
+threshold: 0.5
+counts: tn=4529, fp=1030, fn=490, tp=157
+n0=5559, n1=647, prevalence_pos=0.104254
+per-label: label0_TNR=0.814715, label1_TPR=0.242658
+balanced_accuracy=0.528687
+plot_file=ehr_only_outcome_per_label_accuracy.png

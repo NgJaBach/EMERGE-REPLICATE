@@ -6,20 +6,20 @@ PRIMEKG_KG      = DATAVERSE_DIR + "kg.csv"
 PRIMEKG_DISEASE = DATAVERSE_DIR + "disease_features.csv"
 
 GOOD_DATA = "D:/Lab/Research/EMERGE-REPLICATE/good_data/"
-RECORDS      = 4  # Number of records per patient to keep
+RECORDS      = 48 # Number of records per patient to keep
 RANDOM_STATE = 42 # for reproducibility
 
 # PART 1
 NOTES_ZHU  = "D:/Lab/Research/EMERGE-REPLICATE/preprocessing-zhu/mimic-iii/data/processed/notes.csv"
 EHR_ZHU    = "D:/Lab/Research/EMERGE-REPLICATE/preprocessing-zhu/mimic-iii/data/processed/ehr.csv"
 NOTES_BACH = GOOD_DATA + "processed/notes.csv"
-EHR_BACH   = GOOD_DATA + f"processed/ehr/records_{RECORDS}.csv"
+EHR_BACH   = GOOD_DATA + f"processed/ehr.csv"
 
 os.makedirs(os.path.dirname(EHR_BACH), exist_ok=True)
 
-TRAIN_DRAFT = GOOD_DATA + f"incomplete/records_{RECORDS}/train.csv"
-VAL_DRAFT   = GOOD_DATA + f"incomplete/records_{RECORDS}/val.csv"
-TEST_DRAFT  = GOOD_DATA + f"incomplete/records_{RECORDS}/test.csv"
+TRAIN_DRAFT = GOOD_DATA + f"incomplete/train.csv"
+VAL_DRAFT   = GOOD_DATA + f"incomplete/val.csv"
+TEST_DRAFT  = GOOD_DATA + f"incomplete/test.csv"
 
 os.makedirs(os.path.dirname(TRAIN_DRAFT), exist_ok=True)
 os.makedirs(os.path.dirname(VAL_DRAFT),   exist_ok=True)
@@ -34,7 +34,7 @@ os.makedirs(os.path.dirname(KG_ADJACENCY),     exist_ok=True)
 os.makedirs(os.path.dirname(DISEASE_FEATURES), exist_ok=True)
 os.makedirs(os.path.dirname(NOTES_EMBEDDINGS), exist_ok=True)
 
-DATA_PATH = GOOD_DATA + f"complete/records_{RECORDS}/"
+DATA_PATH = GOOD_DATA + f"complete/"
 
 TRAIN = DATA_PATH + "train.h5"
 VAL   = DATA_PATH + "val.h5"
