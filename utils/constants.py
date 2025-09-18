@@ -6,7 +6,8 @@ PRIMEKG_KG      = DATAVERSE_DIR + "kg.csv"
 PRIMEKG_DISEASE = DATAVERSE_DIR + "disease_features.csv"
 
 GOOD_DATA = "D:/Lab/Research/EMERGE-REPLICATE/good_data/"
-RECORDS      = 48 # Number of records per patient to keep
+# RECORDS      = 48 # Number of records per patient to keep
+RECORDS      = 4
 RANDOM_STATE = 42 # for reproducibility
 
 # PART 1
@@ -30,9 +31,19 @@ KG_ADJACENCY     = GOOD_DATA + "curated/kg_adjacency.pkl"
 DISEASE_FEATURES = GOOD_DATA + "curated/disease_features_cleaned.pkl"
 NOTES_EMBEDDINGS = GOOD_DATA + "curated/notes_embeddings.h5"
 
+SUMEMB_TRAIN = GOOD_DATA + "curated/summary_embeddings/train.h5"
+SUMEMB_VAL   = GOOD_DATA + "curated/summary_embeddings/val.h5"
+SUMEMB_TEST  = GOOD_DATA + "curated/summary_embeddings/test.h5"
+
 os.makedirs(os.path.dirname(KG_ADJACENCY),     exist_ok=True)
 os.makedirs(os.path.dirname(DISEASE_FEATURES), exist_ok=True)
 os.makedirs(os.path.dirname(NOTES_EMBEDDINGS), exist_ok=True)
+
+os.makedirs(os.path.dirname(SUMEMB_TRAIN), exist_ok=True)
+os.makedirs(os.path.dirname(SUMEMB_VAL),   exist_ok=True)
+os.makedirs(os.path.dirname(SUMEMB_TEST),  exist_ok=True)
+
+LLM_LOG = "D:/Lab/Research/EMERGE-REPLICATE/utils/log.txt"
 
 DATA_PATH = GOOD_DATA + f"complete/"
 

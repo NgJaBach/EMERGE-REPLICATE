@@ -13,18 +13,26 @@ def minpse(preds, labels):
     return minpse_score
 
 def get_binary_metrics(preds, labels):
+    # Convert inputs to ensure consistency
+    if not isinstance(preds, torch.Tensor):
+        preds = torch.tensor(preds)
+    if not isinstance(labels, torch.Tensor):
+        labels = torch.tensor(labels)
+    
+    # Convert labels type to int
+    labels = labels.type(torch.int)
+    
     auroc = AUROC(task="binary")
     auprc = AveragePrecision(task="binary")
 
-    # convert labels type to int
-    labels = labels.type(torch.int)
-    auroc(preds, labels)
-    auprc(preds, labels)
-    minpse_score = minpse(preds, labels) 
+    # Calculate metrics
+    auroc_value = auroc(preds, labels).item()
+    auprc_value = auprc(preds, labels).item()
+    minpse_score = minpse(preds.cpu().numpy(), labels.cpu().numpy())
 
     return {
-        "auroc": auroc.compute().item(),
-        "auprc": auprc.compute().item(),
+        "auroc": auroc_value,
+        "auprc": auprc_value,
         "minpse": minpse_score,
     }
 
@@ -92,78 +100,42 @@ def run_bootstrap(preds_outcome, preds_readmission, labels_outcome, labels_readm
     metrics = export_metrics(bootstrap_samples)
     return metrics
 
-def save_per_label_accuracy(preds, labels, save_dir, prefix, threshold=0.5):
-    # tensors
-    p = torch.as_tensor(preds).float().squeeze()
-    y = torch.as_tensor(labels).int().squeeze()
+def plot_prediction_correctness_by_label(preds, labels, title, SAVE_DIR, threshold=0.5):
+    # Ensure inputs are numpy arrays for calculation
+    if isinstance(preds, torch.Tensor):
+        preds = preds.cpu().numpy()
+    if isinstance(labels, torch.Tensor):
+        labels = labels.cpu().numpy()
 
-    # positive-class probability
-    if p.ndim == 2 and p.size(1) == 2:
-        ppos = torch.softmax(p, dim=1)[:, 1] if (p.min() < 0 or p.max() > 1) else p[:, 1]
-    else:
-        ppos = torch.sigmoid(p) if (p.min() < 0 or p.max() > 1) else p
+    # Binarize predictions based on the threshold
+    binary_preds = (preds >= threshold).astype(int)
 
-    yhat = (ppos >= threshold).int()
+    # Calculate TP, TN, FP, FN
+    tp = np.sum((binary_preds == 1) & (labels == 1))
+    tn = np.sum((binary_preds == 0) & (labels == 0))
+    fp = np.sum((binary_preds == 1) & (labels == 0))
+    fn = np.sum((binary_preds == 0) & (labels == 1))
 
-    tn = int(((yhat == 0) & (y == 0)).sum())
-    tp = int(((yhat == 1) & (y == 1)).sum())
-    fp = int(((yhat == 1) & (y == 0)).sum())
-    fn = int(((yhat == 0) & (y == 1)).sum())
+    # Calculate percentage of correct predictions for each class
+    # Handle division by zero if a class has no samples
+    total_positives = tp + fn
+    total_negatives = tn + fp
 
-    n0, n1 = tn + fp, tp + fn
-    tnr = tn / n0 if n0 else float("nan")  # label 0 % correct
-    tpr = tp / n1 if n1 else float("nan")  # label 1 % correct
-    bal_acc = (tnr + tpr) / 2 if (n0 and n1) else float("nan")
-    prevalence = (n1 / (n0 + n1)) if (n0 + n1) else float("nan")
+    percent_label_1_correct = (tp / total_positives * 100) if total_positives > 0 else 0
+    percent_label_0_correct = (tn / total_negatives * 100) if total_negatives > 0 else 0
 
-    # ensure output dir
-    save_dir = Path(save_dir)
-    save_dir.mkdir(parents=True, exist_ok=True)
+    # Plotting
+    fig, ax = plt.subplots()
+    categories = ['Label 0 Correct (TNR)', 'Label 1 Correct (TPR)']
+    values = [percent_label_0_correct, percent_label_1_correct]
 
-    # plot
-    fig, ax = plt.subplots(figsize=(4, 3))
-    ax.bar([0, 1], [tnr * 100, tpr * 100])
-    ax.set_xticks([0, 1], ['label 0', 'label 1'])
+    bars = ax.bar(categories, values, color=['#1f77b4', '#ff7f0e'])
+    ax.set_ylabel('Percentage (%)')
+    ax.set_title(title)
     ax.set_ylim(0, 100)
-    ax.set_ylabel('% correct')
-    ax.set_title(f'Per-label accuracy (thr={threshold:.2f})\nBalanced acc: {bal_acc*100 if not math.isnan(bal_acc) else float("nan"):.1f}%')
-    for i, (pct, corr, tot) in enumerate([(tnr, tn, n0), (tpr, tp, n1)]):
-        if tot:
-            ax.text(i, pct * 100 + 1, f'{pct*100:.1f}%\n({corr}/{tot})',
-                    ha='center', va='bottom', fontsize=8)
-    fig.tight_layout()
-    plot_path = save_dir / f"{prefix}_per_label_accuracy.png"
-    fig.savefig(plot_path, dpi=200)
+
+    # Add percentage labels on top of bars
+    ax.bar_label(bars, fmt='%.2f%%')
+
+    plt.savefig(SAVE_DIR)
     plt.close(fig)
-
-    # text summary
-    def fmt(x): 
-        return f"{x:.6f}" if isinstance(x, float) and not math.isnan(x) else "nan"
-
-    summary = (
-        f"threshold: {threshold}\n"
-        f"counts: tn={tn}, fp={fp}, fn={fn}, tp={tp}\n"
-        f"n0={n0}, n1={n1}, prevalence_pos={fmt(prevalence)}\n"
-        f"per-label: label0_TNR={fmt(tnr)}, label1_TPR={fmt(tpr)}\n"
-        f"balanced_accuracy={fmt(bal_acc)}\n"
-        f"plot_file={plot_path.name}\n"
-    )
-    txt_path = save_dir / f"{prefix}_per_label_metrics.txt"
-    with open(txt_path, "w") as f:
-        f.write(summary)
-
-    # JSON (use None instead of NaN for validity)
-    def safe(x):
-        return None if (isinstance(x, float) and (math.isnan(x) or math.isinf(x))) else x
-
-    data = {
-        "threshold": float(threshold),
-        "counts": {"tn": tn, "fp": fp, "fn": fn, "tp": tp, "n0": n0, "n1": n1},
-        "pct_correct": {"label0_TNR": safe(tnr), "label1_TPR": safe(tpr)},
-        "balanced_accuracy": safe(bal_acc),
-        "prevalence_pos": safe(prevalence),
-        "plot_file": str(plot_path),
-        "text_file": str(txt_path),
-    }
-
-    return data
