@@ -3,7 +3,8 @@ datasets/
 preprocessing-zhu/mimic-iii/data/
 good_data/
 lightning_logs/
-utils/api_keys.py
+api_keys.py
+secrets.py
 ######################
 
 # Byte-compiled / optimized / DLL files
