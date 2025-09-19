@@ -6,7 +6,6 @@ PRIMEKG_KG      = DATAVERSE_DIR + "kg.csv"
 PRIMEKG_DISEASE = DATAVERSE_DIR + "disease_features.csv"
 
 GOOD_DATA = "D:/Lab/Research/EMERGE-REPLICATE/good_data/"
-# RECORDS      = 48 # Number of records per patient to keep
 RECORDS      = 4
 RANDOM_STATE = 42 # for reproducibility
 
