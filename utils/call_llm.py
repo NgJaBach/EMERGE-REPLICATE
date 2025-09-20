@@ -72,7 +72,7 @@ def ask(
     response = remove_reasoning(result)
     return response
 
-def extract_note(notes: str, llm = "qwen2.5:7b-instruct") -> str:
+def extract_note(notes: str, llm = "qwen2.5:7b-instruct", ) -> str:
     def refine_note(extracted: str) -> str:
         response = ask(user_prompt=refine_prompt_tmpl.format(text=notes, entities=extracted), model_name=llm)
         return response
@@ -82,9 +82,11 @@ def extract_note(notes: str, llm = "qwen2.5:7b-instruct") -> str:
         refined = refine_note(response)
         return refined
     
-    res1 = ask(user_prompt=ner_prompt_tmpl.format(input=notes), model_name=llm)
-    res2 = ask(user_prompt=ner_prompt_tmpl.format(input=notes), model_name=llm)
-    answer = refine_note(merge_note(res1, res2))
+    # res1 = ask(user_prompt=ner_prompt_tmpl.format(input=notes), model_name=llm)
+    # res2 = ask(user_prompt=ner_prompt_tmpl.format(input=notes), model_name=llm)
+    # answer = refine_note(merge_note(res1, res2))
+
+    answer = refine_note(ask(user_prompt=ner_prompt_tmpl.format(text=notes, summary=answer), model_name=llm))
     # room to grow
     return answer
 

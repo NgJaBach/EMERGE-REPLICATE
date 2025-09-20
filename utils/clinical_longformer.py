@@ -8,14 +8,13 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 tokenizer = AutoTokenizer.from_pretrained("yikuan8/Clinical-Longformer")
 model = AutoModel.from_pretrained("yikuan8/Clinical-Longformer").to(device).eval()
 
-def longformerize(text: str, max_length: int = 4096):
+def longformerize(text: str):
     model.eval()
     with torch.inference_mode():
         inputs = tokenizer(
             text, 
             return_tensors="pt", 
             truncation=True,
-            max_length=max_length,
         )
         dev = next(model.parameters()).device
         inputs = {k: v.to(dev) for k, v in inputs.items()}
@@ -58,9 +57,13 @@ def langchain_chunk_embed(
 
     return doc.astype(np.float32)
 
-def plain_truncate(text: str, max_length: int = 4096):
-    emb = longformerize(text, max_length=max_length)
-    return emb
+def first_n_words(text: str, n: int = 256) -> str:
+    # Splits on any whitespace, stops after n splits; doesn’t scan the whole string.
+    parts = text.split(None, n)  # None => any whitespace; n => at most n splits
+    return " ".join(parts[:n])
+
+def plain_truncate(text: str, max_length: int = 256):
+    return longformerize(first_n_words(text, max_length))
 
 if __name__ == "__main__":
     txt = "Example sentence. " * 800
