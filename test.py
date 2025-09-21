@@ -4,10 +4,6 @@ import backoff
 import re
 from typing import Dict, Any, Optional
 
-# Base URL for your Ollama instance
-# OLLAMA_BASE_URL = "http://192.168.100.205:11434/api/generate"
-OLLAMA_BASE_URL = 'http://localhost:11434/api/chat'
-
 class OllamaError(Exception):
     """Custom exception for Ollama API errors"""
     pass
@@ -15,12 +11,12 @@ class OllamaError(Exception):
 @backoff.on_exception(
     backoff.expo,
     (requests.exceptions.RequestException, OllamaError),
-    max_time=0, max_tries=0
+    max_time=999, max_tries=9999
 )
 def ollama_completion_with_backoff(**kwargs) -> Dict[str, Any]:
     """Make a request to Ollama API with exponential backoff"""
     try:
-        response = requests.post(OLLAMA_BASE_URL, json=kwargs)
+        response = requests.post("http://192.168.100.205:11434/api/generate", json=kwargs)
         response.raise_for_status()
         return json.loads(response.text)
     except requests.exceptions.HTTPError as e:
@@ -39,7 +35,7 @@ def remove_reasoning(response_content: str) -> str:
 def ask(
     user_prompt: str,
     sys_prompt: str = "",
-    model_name: str = "qwen2.5:7b-instruct",
+    model_name: str = "deepseek-v2:16b",
     max_tokens: int = 128000,
     temperature: float = 0.3,
     reasoning_level: Optional[str] = None,
@@ -72,8 +68,8 @@ def ask(
 
 if __name__ == "__main__":
     # Example usage
-    response = ask("What is the capital of France?")
-    print("Response:", response)
+    # response = ask("What is the capital of France?")
+    # print("Response:", response)
     
     # Example with system prompt and reasoning
     sys_prompt = "You are a helpful assistant."

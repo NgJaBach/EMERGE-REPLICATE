@@ -31,6 +31,7 @@ TEST_DRAFT  = ensure_path(GOOD_DATA + "incomplete/test.csv")
 KG_ADJACENCY     = ensure_path(GOOD_DATA + "curated/kg_adjacency.pkl")
 DISEASE_FEATURES = ensure_path(GOOD_DATA + "curated/disease_features_cleaned.pkl")
 NOTES_EMBEDDINGS = ensure_path(GOOD_DATA + "curated/notes_embeddings.h5")
+NOTES_EXTRACTS   = ensure_path(GOOD_DATA + "curated/notes_extracts.h5")
 
 SUMEMB_TRAIN = ensure_path(GOOD_DATA + "curated/summary_embeddings/train.h5")
 SUMEMB_VAL   = ensure_path(GOOD_DATA + "curated/summary_embeddings/val.h5")

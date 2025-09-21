@@ -81,17 +81,15 @@ def extract_note(notes: str, llm = "qwen2.5:7b-instruct", ) -> str:
         response = ask(user_prompt=note_merge_prompt_tmpl.format(noteA=notaA, noteB=noteB), model_name=llm)
         refined = refine_note(response)
         return refined
-    
-    # res1 = ask(user_prompt=ner_prompt_tmpl.format(input=notes), model_name=llm)
-    # res2 = ask(user_prompt=ner_prompt_tmpl.format(input=notes), model_name=llm)
-    # answer = refine_note(merge_note(res1, res2))
 
-    answer = refine_note(ask(user_prompt=ner_prompt_tmpl.format(text=notes, summary=answer), model_name=llm))
+    res1 = refine_note(ask(user_prompt=ner_prompt_tmpl.format(text=notes), model_name=llm))
+    res2 = refine_note(ask(user_prompt=ner_prompt_tmpl.format(text=notes), model_name=llm))
+    answer = merge_note(res1, res2)
     # room to grow
     return answer
 
 def create_summary(ehr, notes, nodes, edges, llm = "deepseek-v2:16b") -> str:
     prompt = summary_prompt_tmpl.format(ehr=ehr, notes=notes, nodes=nodes, edges=edges)
-    response = ask(user_prompt=prompt, model_name=llm)
+    response = ask(user_prompt=prompt, model_name=llm, reasoning_level="low")
     # log_to_file(LLM_LOG, f"=== Prompt ===\nModel: {llm}\n{prompt}\n=== Response ===\n{response}\n", show_time=True)
     return response

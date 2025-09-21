@@ -51,7 +51,7 @@ Example:
 "small bowel obstruction", "large bowel volvulus", "incarcerated left inguinal hernia", "lordotic position", "low lung volumes", "enlarged heart", "pneumothorax"
 
 [Input]
-{input}
+{text}
 
 [Answer]
 """
