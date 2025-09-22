@@ -33,9 +33,7 @@ DISEASE_FEATURES = ensure_path(GOOD_DATA + "curated/disease_features_cleaned.pkl
 NOTES_EMBEDDINGS = ensure_path(GOOD_DATA + "curated/notes_embeddings.h5")
 NOTES_EXTRACTS   = ensure_path(GOOD_DATA + "curated/notes_extracts.h5")
 
-SUMEMB_TRAIN = ensure_path(GOOD_DATA + "curated/summary_embeddings/train.h5")
-SUMEMB_VAL   = ensure_path(GOOD_DATA + "curated/summary_embeddings/val.h5")
-SUMEMB_TEST  = ensure_path(GOOD_DATA + "curated/summary_embeddings/test.h5")
+SUMMARIES_EMBEDDINGS = ensure_path(GOOD_DATA + "curated/summaries_embeddings.h5")
 
 TRAIN = ensure_path(DATA_PATH + "train.h5")
 VAL   = ensure_path(DATA_PATH + "val.h5")
