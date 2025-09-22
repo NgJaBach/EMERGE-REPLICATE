@@ -3,6 +3,7 @@ import json
 import backoff
 import re
 from typing import Dict, Any, Optional
+import os
 
 class OllamaError(Exception):
     """Custom exception for Ollama API errors"""
@@ -70,8 +71,8 @@ if __name__ == "__main__":
     # Example usage
     # response = ask("What is the capital of France?")
     # print("Response:", response)
-    
+    print(os.cpu_count())
     # Example with system prompt and reasoning
-    sys_prompt = "You are a helpful assistant."
-    response = ask("Explain the theory of relativity.", sys_prompt=sys_prompt, reasoning_level="high")
-    print("Response with reasoning:", response)
+    # sys_prompt = "You are a helpful assistant."
+    # response = ask("Explain the theory of relativity.", sys_prompt=sys_prompt, reasoning_level="high")
+    # print("Response with reasoning:", response)

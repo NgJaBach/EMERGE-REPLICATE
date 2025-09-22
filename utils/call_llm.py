@@ -93,4 +93,4 @@ def create_summary(ehr, notes, nodes, edges, llm = "qwen2.5:7b-instruct") -> str
     prompt = summary_prompt_tmpl.format(ehr=ehr, notes=notes, nodes=nodes, edges=edges)
     response = ask(user_prompt=prompt, model_name=llm, reasoning_level="low")
     # log_to_file(LLM_LOG, f"=== Prompt ===\nModel: {llm}\n{prompt}\n=== Response ===\n{response}\n", show_time=True)
-    return response
+    return response if response else "No summary generated."
