@@ -1,0 +1,6 @@
+outcome_auroc             72.87±0.91
+outcome_auprc             31.27±1.68
+outcome_minpse            34.86±1.30
+readmission_auroc         72.10±1.25
+readmission_auprc         39.43±2.54
+readmission_minpse        41.68±2.52
